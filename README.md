@@ -1,24 +1,40 @@
 # multi-class-text-classification
 
 # data describe
+
 text = pd.DataFrame(train['text'])
+
 text['len'] = text['text'].str.len()
+
 text.describe()
                  len
 count  105758.000000
+
 mean      475.768887
+
 std       780.951261
+
 min         6.000000
+
 25%       238.000000
+
 50%       345.000000
+
 75%       514.000000
+
 max     56181.000000
 
+
 y = train['label']
+
 c = {'label':[np.argmax(i) for i in y]}
+
 c = pd.DataFrame(c)
+
 c['label'].value_counts().plot(kind = 'bar')
+
 c['label'].value_counts()
+
 61     4840
 36     4615
 12     3271
