@@ -37,29 +37,24 @@ class TextCNN:
 
         self.input_x = tf.placeholder(tf.int32, [None, self.sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.int32, [None,],name="input_y")  # y:[None,]
-        # self.input_y_multilabel = tf.placeholder(tf.float32,[None,self.num_classes], name="input_y_multilabel")  # y:[None,num_classes]. this is for multi-label classification only.
         self.dropout_keep_prob=tf.placeholder(tf.float32,name="dropout_keep_prob")
         self.learning_rate = learning_rate
-
-        self.use_mulitple_layer_cnn=False
 
         self.global_step = tf.Variable(0, trainable=False, name="Global_Step")
         self.epoch_step=tf.Variable(0,trainable=False,name="Epoch_Step")
         self.epoch_increment=tf.assign(self.epoch_step,tf.add(self.epoch_step,tf.constant(1)))
-        # self.b1 = tf.Variable(tf.ones([self.num_filters]) / 10)
-        # self.b2 = tf.Variable(tf.ones([self.num_filters]) / 10)
+
         self.decay_steps, self.decay_rate = decay_steps, decay_rate
 
         self.instantiate_weights(usePretrainEmbeddings)
         self.logits = self.inference() #[None, self.label_size]. main computation graph is here.
         self.loss_val = self.loss()
         self.train_op = self.train()
-
-        if not self.multi_label_flag:
-            self.predictions = tf.argmax(self.logits, 1, name="predictions")  # shape:[None,]
-            print("self.predictions:", self.predictions)
-            correct_prediction = tf.equal(tf.cast(self.predictions,tf.int32), self.input_y) #tf.argmax(self.logits, 1)-->[batch_size]
-            self.accuracy =tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="Accuracy") # shape=()
+        
+        self.predictions = tf.argmax(self.logits, 1, name="predictions")  # shape:[None,]
+        print("self.predictions:", self.predictions)
+        correct_prediction = tf.equal(tf.cast(self.predictions,tf.int32), self.input_y) #tf.argmax(self.logits, 1)-->[batch_size]
+        self.accuracy =tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name="Accuracy") # shape=()
 
     def instantiate_weights(self, usePretrainEmbeddings):
         """define all weights here"""
