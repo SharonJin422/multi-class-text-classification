@@ -1,16 +1,18 @@
 import joblib
 import numpy as np
-import jieba, os
+import os, time
+import jieba_fast as jieba
 import pdb
 from collections import defaultdict
 from gensim import corpora, similarities, models, matutils, utils
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 class TextProcessing(object):
-	def __init__(self, stopwordPath):
+	def __init__(self, stopwordPath, max_sequence_len):
 		self.stopwordPath = stopwordPath
-
+		self.max_sequence_len = max_sequence_len
 	def load_stopwords(self):
-		stopwords = open(self.stopwordPath, 'r').read().split('\n')
+		stopwords = open(self.stopwordPath, 'r', encoding = 'gbk').read().split('\n')
 		print("stopwords counts", len(stopwords))
 		print("example of stopword", stopwords[0])
 		return stopwords
@@ -21,8 +23,8 @@ class TextProcessing(object):
 		else:
 			return False
 
-
 	def jieba_tokenize(self, documents):
+		print("start to tokenizations, it takes times")
 		stoplist = self.load_stopwords()
 		corpora_documents = []
 		corpora_documents_list = []
@@ -36,6 +38,7 @@ class TextProcessing(object):
 					outstr.append(word)
 			corpora_documents.append(''.join(word for word in outstr))
 			corpora_documents_list.append(outstr)
+		print("tokenizations finish!")
 		return corpora_documents, corpora_documents_list
 
 	def RemoveWordAppearBelowN(self, corpora_documents, n = 1):
@@ -46,6 +49,33 @@ class TextProcessing(object):
 		corpora_documents = [[token for token in text if frequency[token] > n] for text in corpora_documents]
 		return corpora_documents
 
+	def word2index(self, tokens, vocabulary):
+		print("start to convert tokens into index")
+		extra_word = {'unknown': len(vocabulary), 'PAD': len(vocabulary) + 1}
+		sentence2id = []
+		unknown_words = set()
+		for sen in tokens:
+			idx = []
+			for word in sen:
+				if word in vocabulary.keys():
+					idx.append(vocabulary[word])
+				else:
+					# print("word unkown:", word)
+					unknown_words.add(word)
+					idx.append(extra_word['unknown'])
+			sentence2id.append(idx)
+		print("unknown words count:", len(unknown_words))
+		# padding sentences
+		for i in range(len(sentence2id)):
+			sentence = sentence2id[i]
+			if len(sentence) < self.max_sequence_len:
+				sentence += [extra_word['PAD']] * (self.max_sequence_len - len(sentence))
+			else:
+				sentence = sentence[-self.max_sequence_len:]
+			sentence2id[i] = sentence
+
+		return sentence2id
+
 	def genDictionary(self, documents, is_train, load=True, **kwarg):
 		if is_train:
 			name = 'train'
@@ -53,88 +83,51 @@ class TextProcessing(object):
 			name = 'test'
 
 		if load == True:
-			# self._dictionary.load(kwarg['saveDictPath'])
-			# self._BowVecOfEachDoc = list(corpora.MmCorpus(kwarg['saveBowvecPath']))
-			# filtered_token = joblib.load('./dictionary/'+ name + '_token.p')
-			corpora_documents = joblib.load('./dictionary/' + name + '_filtered_text.p')
-			return corpora_documents
-
-		self._raw_documents = documents
+			# filtered_token = joblib.load('./dictionary/all_'+ name + '_token.p')
+			# corpora_documents = joblib.load('./dictionary/all_' + name + '_filtered_text.p')
+			sentences2id = joblib.load('./dictionary/sentences2id_'+name + '.p')
+			return sentences2id
 		corpora_documents, token = self.jieba_tokenize(documents)
-		filtered_token = self.RemoveWordAppearBelowN(token, n = 1) # 过滤前文本长度为16920，过滤后长度为16767
-		joblib.dump(filtered_token, './dictionary/'+ name + '_token.p')
-		joblib.dump(corpora_documents, './dictionary/' + name + '_filtered_text.p')
-		# pdb.set_trace()
-		return corpora_documents
-		# self._dictionary = corpora.Dictionary(filtered_token)  # 生成词典
-		# # print(self._dictionary.keys())  #133347 key
-		# # print(self._dictionary.get(5))
-		# # print(self._dictionary.dfs) # 单词id: 在多少文档中出现
-		# # print(self._dictionary.token2id)
-		# # for key in self._dictionary.dfs.keys():
-		# # 	if self._dictionary.dfs[key] < 2:
-		# # 		print(self._dictionary.get(key))
-		# # pdb.set_trace()
-
-		# if kwarg['saveDict']:
-		# 	self._dictionary.save(kwarg['saveDictPath'])
-		#
-		# self._BowVecOfEachDoc = [self._dictionary.doc2bow(text) for text in token]  # 向量化
-		# if kwarg['saveBowvec']:
-		# 	corpora.MmCorpus.serialize(kwarg['saveBowvecPath'], self._BowVecOfEachDoc)
-		# if kwarg['returnValue']:
-		# 	return corpora_documents, self._dictionary, self._BowVecOfEachDoc
-
-		def getConvertedModel(self, dictionary, bowvec, model_exist = False):
-			save_model_path = './dictionary/language_model/'
-			if model_exist == False:
-				tfidf = models.TfidfModel(bowvec)  # initialize tfidf model
-				tfidfVec = tfidf[bowvec] # use the model to transform whole corpus
-				tfidf.save(save_model_path + "tfidf_model.tfidf")
-				model = models.LsiModel(tfidfVec, id2word=dictionary, num_topics=kwarg['tfDim']) # initialize an LSI transformation
-				modelVec = model[tfidfVec] # create a double wrapper over the original corpus: bow->tfidf->fold-in-lsi
-				model.save(save_model_path + "lsi_model.lsi") # same for tfidf, lda, ...
-			else:
-				tfidf = models.TfidfModel.load(save_model_path +"tfidf_model.tfidf")
-				tfidfVec = tfidf[bowvec]
-				model = models.LsiModel.load(save_model_path + "lsi_model.lsi")
-				modelVec = model[tfidfVec]
-			return tfidfVec, modelVec
-
-def load_dataset(filename = 'train_data.p', stopwordPath = './data/cn_stopwords.txt', loadflag=False, isTrain=True):
-	dataset = joblib.load(filename, 'rb')
-	print("isTrain:{}, len:{}".format(isTrain, len(dataset)))
-	min_dataset = dataset[:50000]
-	dictPath = os.getcwd() + '/dictionary/'
-	textprocessing = TextProcessing(stopwordPath)
-	token = textprocessing.genDictionary(
-		min_dataset['text'], load=loadflag, is_train=isTrain, saveDict=True, saveDictPath=dictPath + 'dict.dict',
-		saveBowvec=True, saveBowvecPath=dictPath + 'bow_vec.mm', returnValue=True)
-
-	min_dataset['text'] = token
-	if isTrain:
-		print("class nums:", len(min_dataset['label'][0]))
-		return min_dataset['text'], min_dataset['label']
-	else:
-		return min_dataset['text']
-
-def batch_iter(data, batch_size, num_epochs, shuffle=True):
-	"""Iterate the data batch by batch"""
-	data = np.array(data)
-	data_size = len(data)
-	num_batches_per_epoch = int(data_size / batch_size) + 1
-
-	for epoch in range(num_epochs):
-		if shuffle:
-			shuffle_indices = np.random.permutation(np.arange(data_size))
-			shuffled_data = data[shuffle_indices]
+		filtered_token = self.RemoveWordAppearBelowN(token, n=1)
+		# print('./dictionary/all_' + name + '_token.p')
+		# filtered_token = joblib.load('./dictionary/all_' + name + '_token.p')
+		if is_train:
+			self._dictionary = corpora.Dictionary(filtered_token)  # 生成词典
+			token2id = self._dictionary.token2id
+			# print(self._dictionary.keys())  #133347 key
+			# print(self._dictionary.get(5))
+			# print(self._dictionary.dfs) # 单词id: 在多少文档中出现
+			# for key in self._dictionary.dfs.keys():
+			# 	if self._dictionary.dfs[key] < 2:
+			# 		print(self._dictionary.get(key))
+			# pdb.set_trace()
 		else:
-			shuffled_data = data
+			token2id = joblib.load('./dictionary/word2idx_all.p')
 
-		for batch_num in range(num_batches_per_epoch):
-			start_index = batch_num * batch_size
-			end_index = min((batch_num + 1) * batch_size, data_size)
-			yield shuffled_data[start_index:end_index]
+
+		sentence2id = self.word2index(filtered_token, token2id)
+		joblib.dump(filtered_token, './dictionary/all_' + name + '_token.p')
+		joblib.dump(corpora_documents, './dictionary/all_' + name + '_filtered_text.p')
+		joblib.dump(sentence2id, './dictionary/sentences2id_' + name + '.p')
+		if is_train:
+			joblib.dump(self._dictionary, './dictionary/idx2word_all.dict')
+			joblib.dump(token2id, './dictionary/word2idx_all.p')
+
+		return sentence2id
+
+
+def load_dataset(filename = 'train_data.p', stopwordPath = './data/cn_stopwords.txt', loadflag=False, isTrain=True, max_sequence_len = 600):
+	dataset = joblib.load(filename, 'rb')
+	print("is Loading Tokenized dataset:{}, isTrain:{}, len:{}".format(loadflag, isTrain, len(dataset)))
+	textprocessing = TextProcessing(stopwordPath, max_sequence_len)
+	sentence2id = textprocessing.genDictionary(dataset['text'], load=loadflag, is_train=isTrain) #list of list
+
+	if isTrain:
+		dataset['label'] = [int(np.argmax(i)) for i in dataset['label']]
+		return sentence2id, dataset['label']
+	else:
+		return sentence2id
+
 
 if __name__ == '__main__':
-	token, dictionary, BowVecOfEachDoc = load_dataset('./data/train_data.p', './data/cn_stopwords.txt', True)
+	token, dictionary = load_dataset('./data/train_data.p', './data/cn_stopwords.txt', loadflag=False, isTrain=True, max_sequence_len = 600)
