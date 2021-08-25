@@ -1,4 +1,4 @@
-1. 'analysisOfData.ipynb'解释了【max_seq_len】参数的设置
+1. 'dataanlysis.ipynb'解释了【max_seq_len】参数的设置
 
 
 2. 'parameters.json’配置模型相关参数
