@@ -1,12 +1,14 @@
 本项目是针对法条进行分类，数据来源是人工智能司法杯2018年的数据
+
 http://cail.cipsc.org.cn:2018/
 
 运行顺序：
+
 0. dataanlysis.ipynb分析了数据的分布，并解释了【max_seq_len】参数的设置
 
-2. python generate_word_embeddings.py  生成字典和词向量
+1. python generate_word_embeddings.py  生成字典和词向量
 
-4. python train.py
+2. python train.py
 
     其中配置文件'parameters.json’配置模型相关参数含义如下：
 
