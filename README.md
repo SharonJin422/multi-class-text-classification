@@ -39,6 +39,6 @@ http://cail.cipsc.org.cn:2018/
 
 1）对比了fastText和TextCNN, 训练结果分别为【40%】和【84%】
 
-2）以TextCNN为主干网络，加载预训练的词向量，训练结果为【】
+2）以TextCNN为主干网络，加载预训练的词向量，训练结果为【84.5%】，和不加embedding的效果差不多
 
   
