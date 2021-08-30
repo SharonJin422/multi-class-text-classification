@@ -33,16 +33,16 @@ http://cail.cipsc.org.cn:2018/ <br>
     "use_embeddings":是否使用预训练的词向量，下载来源：https://ai.tencent.com/ailab/nlp/en/embedding.html <br>
 
 
-3. 训练结果： <br>
+3. 训练结果:<br>
     因为该任务文本属于较长文本，考虑到序列模型的梯度消失问题，选择了CNN网络结构<br>
     1）对比了fastText和TextCNN, 训练结果分别为【40%】和【84%】 <br>
     2）以TextCNN为主干网络，加载预训练的词向量，训练结果为【84.5%】，和不加embedding的效果差不多 <br>
-    3）进一步的优化想法是：
-       A. 从网络结构入手，可以考虑加上attention
-       B. 从embedding入手，针对法条分类的场景，可以在pretrain的语言模型基础上用BETR再fine-tune垂直领域的语言模型
+    3）进一步的优化想法是：<br>
+    A. 从网络结构入手，可以考虑加上attention<br>
+    B. 从embedding入手，针对法条分类的场景，可以在pretrain的语言模型基础上用BETR再fine-tune垂直领域的语言模型<br>
        
 ##### 如何预测<br>
-    1）label需要进行np.argmax()处理<br>
-    2）python predict.py<br>
+   1）label需要进行np.argmax()处理<br>
+   2）python predict.py<br>
 
   
