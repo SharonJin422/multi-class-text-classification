@@ -35,7 +35,7 @@ def train_cnn():
 	x = x_raw
 	y = np.array(y_raw)
 
-	vocab_size=len(textprocessing.vocaburary2id)
+	vocab_size=len(textprocessing.vocaburary2id) + 2 # extra len for 'padding' and 'unkown' words
 	print("vacab_size:" ,vocab_size)
 
 	"""Step 2: split the original dataset into train and test sets"""
@@ -131,7 +131,8 @@ def do_eval(sess, textCNN, evalX, evalY):
 	print("predict:", predict[:10])
 	print("gt:", y_true[:10])
 	accuracy = correct_predictions / number_examples
-	return eval_loss / float(eval_counter), accuracy 
+	return eval_loss / float(eval_counter), accuracy
+
 
 
 if __name__ == '__main__':
