@@ -22,8 +22,6 @@ http://cail.cipsc.org.cn:2018/
     
     "embedding_dim": 词向量维度,
     
-    "l2_reg_lambda": 正则惩罚项参，
-    
     "dropout_keep_prob": 0.5
     
     "num_classes": 类别个数,
