@@ -1,6 +1,6 @@
 本项目是针对法条进行分类，数据来源是人工智能司法杯2018年的数据<br> 
 http://cail.cipsc.org.cn:2018/ <br> 
-
+处理后的数据下载地址：https://webmail.alibaba-inc.com/alimail/openLinks/downloadMimeMetaDiskBigAttach?id=netdiskid%3Av001%3Afile%3ADzzzzzzNqZv%3Bwdz6AdzMl3nP2FDPctsSZS6L9xNA7nCG6ZMEvfm2C9VVNDTn%2F9EhmSwdsFLDK%2Fd%2FZm3kcn5KaOl%2FpAgtMb3HHjw%2B1N1pp4hwjwwhc1WpBMgi8MI23BF5pXl9UVzmPXslSF34nkWy7Vo%3D <br>
 ##### 数据预处理说明<br>
 1. dataanlysis.ipynb分析了数据的分布，并解释了【max_seq_len】参数的设置 <br> 
 2. 对label的特殊处理，将one-hot标签改成了单标签，即[0，0，0，1，0,....] = [3] <br>
